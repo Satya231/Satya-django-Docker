@@ -19,6 +19,7 @@ from todo import settings
 
 
 #=======================================================Home View Page===========================================================================================
+
 @login_required(login_url='login')
 def home(request):
     if request.user.is_authenticated:
@@ -32,6 +33,9 @@ def home(request):
         return render(request , 'index.html' , context={'form' : form , 'todos' : todos, })
     else:
             return redirect('login')
+''' This Is Home Page To Display All The Field's value Related to Todo
+     here we have applied filter the quesry set for user of Model TODO to Display All the Field's Value Related to User
+      and set ordering is by priority'''
 
 #==================================================Login Page=============================================================================================================
 def login(request):
@@ -64,6 +68,10 @@ def login(request):
                 "form" : form
             }
             return render(request , 'login.html' , context=context )
+
+''' here after getting Post req ,validating Form and save the user.
+    Setting a SESSION id for  user for validating in nxt page.
+    and finally redirected  to home page after valid login'''
 
 #==========================Sign_Up Verification via OTP=============================================================================================
 
@@ -99,11 +107,17 @@ def signup(request):
         else:
             return render(request , 'signup.html' , context=context)
 
+''' After validating form of signup page we set users in inactive mode, so that users cant able to login.
+     Because without Email Otp Verification Users can't login .and also we are setting a session id for user to validating next page.
+     Here we also calling Otp function to generate otp and create a new object for user_otp to store user and otp in backend and 
+     also calling Send_email function where we are sending otp to email.
+     After signup form,page will redirected To Otp Verification Page  '''
+
 
 
 def otp():
     return random.randint(100000,999999)
-
+''' Here we have just made an otp function to generate otp by using Random module'''
 #=============================================Resend Otp  ================================================================================================================
 
 def Resend_otp(request):

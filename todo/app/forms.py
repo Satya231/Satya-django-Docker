@@ -9,9 +9,9 @@ from django.core.validators import FileExtensionValidator
 
 
 
-
+''' ToDo Form  with Image File Validators'''
 class TODOForm(forms.ModelForm):
-    image = forms.FileField(  validators=[FileExtensionValidator(['png','jpg','webp'])])
+    image = forms.FileField(validators=[FileExtensionValidator(['png','jpg','webp'])])
     class Meta:
         model = TODO
         fields = ['tasks' , 'status' ,'image', 'priority']
@@ -23,12 +23,11 @@ class TODOForm(forms.ModelForm):
 
             return image
 
+''' Update Form Inheriting Todo Form For Updating All The Fields'''
 class UpdateForm(TODOForm):
     class Meta:
         model = TODO
         fields = ['tasks'  ,'image', 'priority']
-
-
 
 
 
@@ -38,12 +37,14 @@ class signupForm(UserCreationForm):
         model = MyCustomModel
         fields = ("email",)
 
+''' This Is For Email Field Where We'll Verify Our Email'''
 class forget_passwordForm(forms.ModelForm):
     email = forms.EmailField(max_length=125)
     class Meta:
         model = MyCustomModel
         fields = ["email",]
-
+        
+'''This Is For Password Reset Field After Verifying Email With Otp  Clicking Forget password'''
 class Password_rest_form(forms.Form):
     new_password = forms.CharField(max_length=100, widget = forms.PasswordInput)
     confirm_password = forms.CharField(max_length=100, widget = forms.PasswordInput)
