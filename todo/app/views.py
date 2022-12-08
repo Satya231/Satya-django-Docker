@@ -16,6 +16,11 @@ from django.contrib.auth import get_user_model
 from functools import lru_cache
 from django.views.decorators.cache import cache_page
 from todo import settings
+from .Text_extraction import extract
+import pytesseract
+from PIL import Image
+
+
 
 
 #=======================================================Home View Page===========================================================================================
@@ -25,16 +30,27 @@ def home(request):
     if request.user.is_authenticated:
         user = request.user
         form = TODOForm()
+        #get_image = form.image
         todos = TODO.objects.filter(user = user).order_by('priority')
-        #print(todos.__dict__)
-        # if (request.session.has_key('uid')):
-        #     res = request.session['uid']
-        #     print(res)
-        return render(request , 'index.html' , context={'form' : form , 'todos' : todos, })
+        #todo = TODO.objects.get(user = user)
+        ''' field's value extraxtion '''
+        # if todos:
+        #     field_name = 'image'
+        #     obj = TODO.objects.last()
+        #     field_value = getattr(obj, field_name)
+        #     #print(field_value)
+        #     text = extract(field_value)
+        #     obj.text = text
+           
+        #     obj.save()
+            
+            
+      
+        return render(request , 'index.html' , context={'form' : form , 'todos' : todos,   })
     else:
             return redirect('login')
-''' This Is Home Page To Display All The Field's value Related to Todo
-     here we have applied filter the quesry set for user of Model TODO to Display All the Field's Value Related to User
+''' This Is Home Page To Display All The Actions of Todo
+     here we have applied filter the query set for user object of Model TODO to Display All the Field's Value Related to User
       and set ordering is by priority'''
 
 #==================================================Login Page=============================================================================================================
@@ -107,7 +123,7 @@ def signup(request):
         else:
             return render(request , 'signup.html' , context=context)
 
-''' After validating form of signup page we set users in inactive mode, so that users cant able to login.
+''' After validating form of signup page we set user to inactive mode, so that users can't able to login.
      Because without Email Otp Verification Users can't login .and also we are setting a session id for user to validating next page.
      Here we also calling Otp function to generate otp and create a new object for user_otp to store user and otp in backend and 
      also calling Send_email function where we are sending otp to email.
@@ -117,6 +133,7 @@ def signup(request):
 
 def otp():
     return random.randint(100000,999999)
+
 ''' Here we have just made an otp function to generate otp by using Random module'''
 #=============================================Resend Otp  ================================================================================================================
 
@@ -183,14 +200,65 @@ def add_todo(request):
         user = request.user
         #print(user)
         form = TODOForm(request.POST,request.FILES)
+        
+    
         #print(request.POST, request.FILES) 
         if form.is_valid():
-            print(form.cleaned_data)
+            img = form.cleaned_data.get("image")
+
+            
+            
             todo = form.save(commit=False)
             todo.user = user
+            
             todo.save()
-            #print(todo)
+            todo1 = TODO.objects.filter(user = request.user)
+            if todo1:
+                ''' field's value extraxtion and save extracted text into TODO text field '''
+
+                field_name = 'image'
+                obj = TODO.objects.last()
+                field_value = getattr(obj, field_name)
+                #print(field_value)
+                text = extract(field_value)
+                obj.text = text
+            
+                obj.save()
+                
+
+            # print("abcd")
+            # print(TODO.image)
+            # TODO.text = extract(todo.image)
+            
+            # img_file = todo.image
+            #print(img_file)
+            ##text = extract(img_file)
+            
+            
+           
+            
+            
+            # print("abcd")
+            # print(text)
+            # todo.text = text
+            
+            
+            # img_file = todo.image
+            # print(img_file)
+            # text = extract(img_file)
+            # print("abcd")
+            # print(text)
+            # context = {'text': text}
             return redirect("home")
+            
+                
+           
+            # request.session['uid'] = user_id
+            
+            # print(todo)
+           
+           
+            
         else: 
             return render(request , 'index.html' , context={'form' : form})
 

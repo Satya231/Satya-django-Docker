@@ -113,9 +113,9 @@ class TODO(models.Model):
     user = models.ForeignKey(MyCustomModel, on_delete=models.CASCADE, null=True, blank=True)
     date = models.DateTimeField(auto_now_add=True)
     priority = models.CharField(max_length=2 , choices=priority_choices)
-    image = models.ImageField(upload_to = 'picture', max_length = 255,null=True, blank=True
-   
-    ) #pip install pillow for images
+    image = models.FileField(upload_to = 'picture', max_length = 255,null=True, blank=True)
+    text = models.TextField(blank=True, null=True )
+     #pip install pillow for images
 
     def __str__(self):
         return self.tasks

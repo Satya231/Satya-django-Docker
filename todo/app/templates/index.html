@@ -57,6 +57,7 @@
                   <th>Priority</th>
                   <th>Delete</th>
                   <th>Update</th>
+                  <th>Extracted_text</th>
 
                 </tr>
               </thead>
@@ -90,6 +91,7 @@
                     {%endif%}
                   </td>
                 <td><a href ="/update-todo/{{todo.id}}/" title="Update" class="">🔄</a></td>
+                <td>{{todo.text}}</td>
                 </tr>
                 {%endfor%}
 

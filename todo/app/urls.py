@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path
-from app.views import home , login , signup , add_todo , signout , delete_todo, change_todo, change_password,verify, forget_password,verify1,password_reset,Resend_otp,update_todo
+from app.views import home, login , signup , add_todo , signout , delete_todo, change_todo, change_password,verify, forget_password,verify1,password_reset,Resend_otp,update_todo
 from django.contrib.auth import views as auth_views
 #resend_otp
 
