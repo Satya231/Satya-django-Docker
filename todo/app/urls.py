@@ -20,4 +20,5 @@ urlpatterns = [
    path('forget_password/', forget_password, name='forget_password'),
    path('verify1/', verify1, name='verify1'),
    path('password_reset/', password_reset, name='password_reset'),
+   #path("celery_tasks/", test, name='test')
 ]

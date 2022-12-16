@@ -32,13 +32,17 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    
+    'app',
+    'django_celery_results',
+    'django_celery_beat',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'app',
+    
 ]
 
 MIDDLEWARE = [
@@ -80,6 +84,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'todo.wsgi.application'
+# ASGI_APPLICATION = 'todo.asgi.application'
 
 
 # Database
@@ -165,9 +170,29 @@ EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_HOST_USER = "satya.prakash1132@gmail.com" 
 DEFAULT_FROM_EMAIL = 'satya.prakash1132@gmail.com'
-EMAIL_HOST_PASSWORD = "vycumsxvshifsiap"
+EMAIL_HOST_PASSWORD = "amsixzqijfqqyfty"
 SERVER_EMAIL = "satya.prakash1132@gmail.com"
 #DEFAULT_FROM_EMAIL = 'Testing <satya.prakash1132@gmail.com>'
 
 
 #PASSWORD_RESET_TIMEOUT_DAYS
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "channels_redis.core.RedisChannelLayer",
+#         "CONFIG": {
+#             "hosts": [("127.0.0.1", 6379)],
+#         },
+#     },
+# }
+CELERY_BROKEN_URL = 'redis://127.0.0.1:6379'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Kolkata'
+
+
+CELERY_RESULT_BACKEND = 'django-db'
+
+#celery-beat
+
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'

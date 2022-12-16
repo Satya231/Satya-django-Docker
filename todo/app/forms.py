@@ -54,7 +54,7 @@ class Password_rest_form(forms.Form):
 ''' Custom User Login Form'''
 class UserLoginForm(forms.Form):
     email=forms.EmailField(max_length = 100)
-    password=forms.CharField()
+    password=forms.CharField(widget = forms.PasswordInput())
 
     def clean(self,*args,**kwargs):
         email=self.cleaned_data.get('email')

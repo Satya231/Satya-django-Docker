@@ -3,8 +3,10 @@ from celery import shared_task
 from django.core.mail import send_mail
 from .models import MyCustomModel,user_otp
 
+
+
 @shared_task(bind=True)
-def send_email(user_id):
+def send_email(self,user_id):
     usr = MyCustomModel.objects.get(id = user_id)
     user = user_otp.objects.get(user=usr)
 
@@ -18,4 +20,3 @@ def send_email(user_id):
                  fail_silently =True ,
     )
     return "Done"
-    #return send_mail()

@@ -1,24 +1,19 @@
-from django.shortcuts import render , redirect,HttpResponse,HttpResponseRedirect
+from django.shortcuts import render , redirect,HttpResponse
 from django.http import HttpResponse
-from django.contrib.auth import authenticate , login as loginUser  , logout, update_session_auth_hash
+from django.contrib.auth import authenticate , login as loginUser  , logout
 from django.contrib.auth.forms import AuthenticationForm , PasswordChangeForm
 # Create your views here.
 from app.forms import TODOForm,signupForm,SetPasswordForm,forget_passwordForm,Password_rest_form,UserLoginForm, UpdateForm
 from app.models import TODO,MyCustomModel,user_otp
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import get_user_model
 import random
-from django.core.mail import send_mail
+
 from django.conf import settings
 from django.contrib import messages
-from .utils import send_email
-from django.contrib.auth import get_user_model
-from functools import lru_cache
-from django.views.decorators.cache import cache_page
+from .tasks import send_email
 from todo import settings
 from .Text_extraction import extract
-import pytesseract
-from PIL import Image
+
 
 
 
@@ -30,22 +25,8 @@ def home(request):
     if request.user.is_authenticated:
         user = request.user
         form = TODOForm()
-        #get_image = form.image
         todos = TODO.objects.filter(user = user).order_by('priority')
-        #todo = TODO.objects.get(user = user)
-        ''' field's value extraxtion '''
-        # if todos:
-        #     field_name = 'image'
-        #     obj = TODO.objects.last()
-        #     field_value = getattr(obj, field_name)
-        #     #print(field_value)
-        #     text = extract(field_value)
-        #     obj.text = text
-           
-        #     obj.save()
-            
-            
-      
+
         return render(request , 'index.html' , context={'form' : form , 'todos' : todos,   })
     else:
             return redirect('login')
@@ -53,41 +34,6 @@ def home(request):
      here we have applied filter the query set for user object of Model TODO to Display All the Field's Value Related to User
       and set ordering is by priority'''
 
-#==================================================Login Page=============================================================================================================
-def login(request):
-    
-    if request.method == 'GET':
-        form1 = UserLoginForm()
-        context = {
-            "form" : form1
-        }
-        return render(request , 'login.html' , context=context )
-    else:
-        form = UserLoginForm(data=request.POST)
-        print(form.is_valid())
-        
-        if form.is_valid():
-            eml = form.cleaned_data.get('email')
-            password = form.cleaned_data.get('password')
-            data=request.POST.get('username')
-            #print(data)
-            user = authenticate(email=eml , password = password)
-        
-
-            if user is not None:
-                loginUser(request , user)
-                messages.success(request, f'You Have Logged In Successfully ')
-                request.session['uid'] = request.POST.get('user.id') 
-                return redirect('home')
-        else:
-            context = {
-                "form" : form
-            }
-            return render(request , 'login.html' , context=context )
-
-''' here after getting Post req ,validating Form and save the user.
-    Setting a SESSION id for  user for validating in nxt page.
-    and finally redirected  to home page after valid login'''
 
 #==========================Sign_Up Verification via OTP=============================================================================================
 
@@ -117,7 +63,8 @@ def signup(request):
                 print(my_otp)
                 usr_otp = user_otp.objects.create(user =user, otp= my_otp)
                 usr_otp.save()
-                #send_email(user_id)
+                send_email.delay(user_id)
+                
                 messages.success(request, f'Otp Has Sent Successfully To Ur Mail.Check Ur Mail')
             return render(request, 'otp_check.html', {'otp':True, 'usr':user})
         else:
@@ -128,6 +75,45 @@ def signup(request):
      Here we also calling Otp function to generate otp and create a new object for user_otp to store user and otp in backend and 
      also calling Send_email function where we are sending otp to email.
      After signup form,page will redirected To Otp Verification Page  '''
+# def send_mail_func(request):
+#     send_email(user_id)
+#     return HttpResponse("sent")
+#==================================================Login Functions=============================================================================================================
+def login(request):
+    
+    if request.method == 'GET':
+        form1 = UserLoginForm()
+        context = {
+            "form" : form1
+        }
+        return render(request , 'login.html' , context=context )
+    else:
+        form = UserLoginForm(data=request.POST)
+        print(form.is_valid())
+        
+        if form.is_valid():
+            eml = form.cleaned_data.get('email')
+            password = form.cleaned_data.get('password')
+            data=request.POST.get('username')
+            #print(data)
+            user = authenticate(email=eml , password = password)
+        
+
+            if user is not None:
+                loginUser(request , user)
+                messages.success(request, f'You Have Logged In Successfully ')
+                #request.session['uid'] = request.POST.get('user.id') 
+                return redirect('home')
+        else:
+            context = {
+                "form" : form
+            }
+            return render(request , 'login.html' , context=context )
+
+''' here after getting Post req ,validating Form and save the user.
+    Setting a SESSION id for  user for validating in nxt page.
+    and finally redirected  to home page after valid login'''
+
 
 
 
@@ -147,23 +133,20 @@ def Resend_otp(request):
 
         if get_usr.exists(): 
             user = MyCustomModel.objects.get(id = temp)
+            user_id = user.id
             usr_otp = user_otp.objects.filter(user = user) 
             if usr_otp:
                 usr_otp = user_otp.objects.get(user = user)
+                
                 my_otp = otp()
                 usr_otp.otp = my_otp
                 usr_otp.save()
                 print(usr_otp.otp)
 
-                mess = f"Hello {user.username},\nYour OTP is {usr_otp.otp}\nThanks!"
-                # send_mail(
-                #     "Welcome to My ToDo - Verify Your Email",
-                #     mess,
-                #     settings.EMAIL.HOST_USER,
-                #     [get_usr.email],
-                #     fail_silently = False
-
-                # )
+                
+                #send_mail_func(user.id)
+                #messages.success(request, f'Otp Has ReSent Successfully To Ur Mail.Check Ur Mail')
+               
             return render(request, 'otp_check.html', {'otp':True, 'usr':user})
     return HttpResponse("Cant't Send")
 
@@ -182,7 +165,7 @@ def verify(request):
             if int(get_otp) == user_otp.objects.filter(user=usr).last().otp:
                 usr.is_active = True
                 usr.save()
-                messages.success(request, f'Account is Created For {usr.username}')
+                messages.success(request, f'Account is Created For {usr.email}')
 
                 return redirect('login')
             else:
@@ -204,60 +187,26 @@ def add_todo(request):
     
         #print(request.POST, request.FILES) 
         if form.is_valid():
-            img = form.cleaned_data.get("image")
 
-            
-            
             todo = form.save(commit=False)
             todo.user = user
             
             todo.save()
             todo1 = TODO.objects.filter(user = request.user)
             if todo1:
-                ''' field's value extraxtion and save extracted text into TODO text field '''
+                
+                ''' Image_field's value extraction and save extracted text into TODO text field '''
 
                 field_name = 'image'
                 obj = TODO.objects.last()
-                field_value = getattr(obj, field_name)
-                #print(field_value)
-                text = extract(field_value)
+                image_file = getattr(obj, field_name)
+                print(field_name)
+                text = extract(image_file)
                 obj.text = text
             
                 obj.save()
-                
-
-            # print("abcd")
-            # print(TODO.image)
-            # TODO.text = extract(todo.image)
-            
-            # img_file = todo.image
-            #print(img_file)
-            ##text = extract(img_file)
-            
-            
-           
-            
-            
-            # print("abcd")
-            # print(text)
-            # todo.text = text
-            
-            
-            # img_file = todo.image
-            # print(img_file)
-            # text = extract(img_file)
-            # print("abcd")
-            # print(text)
-            # context = {'text': text}
+                          
             return redirect("home")
-            
-                
-           
-            # request.session['uid'] = user_id
-            
-            # print(todo)
-           
-           
             
         else: 
             return render(request , 'index.html' , context={'form' : form})
@@ -344,10 +293,11 @@ def forget_password(request):
                     if usr_otp:
                         usr_otp = user_otp.objects.get(user = user)
                         my_otp = otp()
+                        #print(my_otp)
                         usr_otp.otp = my_otp
                         usr_otp.save()
                         print(usr_otp.otp)
-                        #send_email(user_id)
+                        send_email.delay(user_id)
                         messages.success(request, f'Otp Has Sent Successfully To Ur Mail.Check Ur Mail')
                     return render(request, 'otp_check1.html', {'otp':True, 'usr':user})
         else:
@@ -405,8 +355,11 @@ def password_reset(request):
             form = Password_rest_form()
             return render(request, 'password_reset.html', {'form':form})
 
+#================websocket connections====================================================================================================================================
 
-            
+# def test(request):
+#    test_func.delay()
+#    return HttpResponse("Done") 
 
     
     

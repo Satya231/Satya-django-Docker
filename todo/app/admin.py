@@ -11,28 +11,37 @@ class user_otpAdmin(admin.ModelAdmin):
 
 class TodoAdmin(admin.ModelAdmin):
     model = TODO
-    list_display = ('user', 'priority', 'tasks', 'status','image')
+    list_display = ('user', 'priority', 'tasks', 'status','image','text')
 
-    ordering =('priority',)
+    ordering =('id',)
 
 
-class CustomUserAdmin(UserAdmin):
+class CustomUserAdmin(admin.ModelAdmin):
     
   
     model = MyCustomModel
-    list_display = ('email','username', 'date_joined', 'is_staff', 'is_active',)
-    add_fieldsets = (
-    (None, {
-        'classes': ('wide',),
-        'fields': ('email', 'first_name', 'last_name', 'password1', 'password2'),
-    }),
-    )
+    list_display = ('id','email', 'date_joined', 'is_staff', 'is_active',)
+    add_fieldsets = {
+        
+        'fields': ('email',  'password1', 'password2'),
+    }
+    
 
    
     
-    ordering = ('email',)
+    ordering = ('id',)
+
+
+# class ChatModelAdmin(admin.ModelAdmin):
+#     list_display = ['id', 'content', 'timestamp', 'group']
+
+# class GroupModelAdmin(admin.ModelAdmin):
+#     list_display = ['id', 'name']
+
 
 
 admin.site.register(TODO, TodoAdmin)
 admin.site.register(MyCustomModel,CustomUserAdmin)
 admin.site.register(user_otp,user_otpAdmin)
+# admin.site.register(Chat)
+# admin.site.register(Group)
