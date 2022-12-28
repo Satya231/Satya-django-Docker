@@ -1,4 +1,5 @@
 from django.shortcuts import render , redirect,HttpResponse
+import os
 from django.http import HttpResponse
 from django.contrib.auth import authenticate , login as loginUser  , logout
 from django.contrib.auth.forms import AuthenticationForm , PasswordChangeForm
@@ -7,18 +8,26 @@ from app.forms import TODOForm,signupForm,SetPasswordForm,forget_passwordForm,Pa
 from app.models import TODO,MyCustomModel,user_otp
 from django.contrib.auth.decorators import login_required
 import random
-
+import json
 from django.conf import settings
 from django.contrib import messages
-from .tasks import send_email
+from .tasks import send_email, extract_text, file_validation
+from celery.contrib import rdb
 from todo import settings
 from .Text_extraction import extract
+from PIL import Image
+from celery import chain
+import os.path
+import ipdb
 
 
 
 
 
 #=======================================================Home View Page===========================================================================================
+''' This Is Home Page To Display All The Actions of Todo
+     here we have applied filter the query set for user object of Model TODO to Display All the Field's Value Related to User
+      and set ordering is by priority'''
 
 @login_required(login_url='login')
 def home(request):
@@ -30,13 +39,15 @@ def home(request):
         return render(request , 'index.html' , context={'form' : form , 'todos' : todos,   })
     else:
             return redirect('login')
-''' This Is Home Page To Display All The Actions of Todo
-     here we have applied filter the query set for user object of Model TODO to Display All the Field's Value Related to User
-      and set ordering is by priority'''
+
 
 
 #==========================Sign_Up Verification via OTP=============================================================================================
-
+''' After validating form of signup page we set user to inactive mode, so that users can't able to login.
+     Because without Email Otp Verification Users can't login .and also we are setting a session id for user to validating next page.
+     Here we also calling Otp function to generate otp and create a new object for user_otp to store user and otp in backend and 
+     also calling Send_email function where we are sending otp to email.
+     After signup form,page will redirected To Otp Verification Page  '''
 def signup(request):
 
     if request.method == 'GET':
@@ -58,27 +69,30 @@ def signup(request):
             user_id = user.id
             request.session['uid'] = user_id
             print(user)
+            email = user.email
             if user is not None:
-                my_otp=otp()
-                print(my_otp)
-                usr_otp = user_otp.objects.create(user =user, otp= my_otp)
+                ur_otp=otp()
+                print(ur_otp)
+                usr_otp = user_otp.objects.create(user =user, otp= ur_otp)
                 usr_otp.save()
-                send_email.delay(user_id)
+                
+                usr = MyCustomModel.objects.get(id = user_id)
+                send_email.apply_async(args=[email, ur_otp])
                 
                 messages.success(request, f'Otp Has Sent Successfully To Ur Mail.Check Ur Mail')
             return render(request, 'otp_check.html', {'otp':True, 'usr':user})
         else:
             return render(request , 'signup.html' , context=context)
 
-''' After validating form of signup page we set user to inactive mode, so that users can't able to login.
-     Because without Email Otp Verification Users can't login .and also we are setting a session id for user to validating next page.
-     Here we also calling Otp function to generate otp and create a new object for user_otp to store user and otp in backend and 
-     also calling Send_email function where we are sending otp to email.
-     After signup form,page will redirected To Otp Verification Page  '''
+
 # def send_mail_func(request):
 #     send_email(user_id)
 #     return HttpResponse("sent")
 #==================================================Login Functions=============================================================================================================
+''' here after getting Post req ,validating Form and save the user.
+    Setting a SESSION id for  user for validating in nxt page.
+    and finally redirected  to home page after valid login'''
+
 def login(request):
     
     if request.method == 'GET':
@@ -110,17 +124,15 @@ def login(request):
             }
             return render(request , 'login.html' , context=context )
 
-''' here after getting Post req ,validating Form and save the user.
-    Setting a SESSION id for  user for validating in nxt page.
-    and finally redirected  to home page after valid login'''
 
 
 
+''' Here we have just made an otp function to generate otp by using Random module'''
 
 def otp():
     return random.randint(100000,999999)
 
-''' Here we have just made an otp function to generate otp by using Random module'''
+
 #=============================================Resend Otp  ================================================================================================================
 
 def Resend_otp(request):
@@ -162,7 +174,7 @@ def verify(request):
             #usr = MyCustomModel.objects.get(email=request.POST.get('email'))
             usr = MyCustomModel.objects.get(email = get_usr)
         
-            if int(get_otp) == user_otp.objects.filter(user=usr).last().otp:
+            if int(get_otp) == user_otp.objects.filter(user=usr).first().otp:
                 usr.is_active = True
                 usr.save()
                 messages.success(request, f'Account is Created For {usr.email}')
@@ -184,25 +196,45 @@ def add_todo(request):
         #print(user)
         form = TODOForm(request.POST,request.FILES)
         
-    
+        
+        
+        
         #print(request.POST, request.FILES) 
         if form.is_valid():
-
+            #image = request.FILES.get('image')
+           
             todo = form.save(commit=False)
             todo.user = user
-            
             todo.save()
+            image = todo.image.path
+            print("abcd")
+            print(image)
+
             todo1 = TODO.objects.filter(user = request.user)
+            #ipdb.set_trace()
             if todo1:
                 
                 ''' Image_field's value extraction and save extracted text into TODO text field '''
 
-                field_name = 'image'
+                #field_name = 'image'
                 obj = TODO.objects.last()
-                image_file = getattr(obj, field_name)
-                print(field_name)
-                text = extract(image_file)
-                obj.text = text
+                
+                # image_file = getattr(obj, field_name)
+                
+                # obj_1 = TODO.objects.values().last()
+                # image = obj_1['image']
+                
+                # id = obj_1['id']
+                # print(image)
+                # print("abcd")
+                # text = extract(img_file)
+                # payload = {'image':'files'}
+                #file_name = json.dumps('image')
+    
+                text = chain(file_validation.s(image),extract_text.s()).apply_async()
+                
+                print(text.get())
+                obj.text = text.get()
             
                 obj.save()
                           
@@ -278,6 +310,7 @@ def forget_password(request):
         email = request.POST.get('email')
         user_email = MyCustomModel.objects.filter(email = email)
         if user_email:
+            #import ipdb;ipdb.set_trace()
             user = MyCustomModel.objects.get(email=email)
             user.is_active = False
             user.save()
@@ -286,20 +319,32 @@ def forget_password(request):
             if user is not None:
 
                     
-                    #user = MyCustomModel.objects.get(user=user_id)
-                    #user_otp.otp = my_otp
-                    #user_otp.save()
-                    usr_otp = user_otp.objects.filter(user =user)
-                    if usr_otp:
-                        usr_otp = user_otp.objects.get(user = user)
-                        my_otp = otp()
-                        #print(my_otp)
-                        usr_otp.otp = my_otp
-                        usr_otp.save()
-                        print(usr_otp.otp)
-                        send_email.delay(user_id)
-                        messages.success(request, f'Otp Has Sent Successfully To Ur Mail.Check Ur Mail')
-                    return render(request, 'otp_check1.html', {'otp':True, 'usr':user})
+                #user = MyCustomModel.objects.get(user=user_id)
+                #user_otp.otp = my_otp
+                #user_otp.save()
+                #import ipdb;ipdb.set_trace()
+                usr_otp = user_otp.objects.filter(user =user)
+                if usr_otp:
+                    usr_otp = user_otp.objects.get(user = user)
+                    #import ipdb;ipdb.set_trace()
+                    my_otp = otp()
+                    #print(my_otp)
+                    usr_otp.otp = my_otp
+                    usr_otp.save()
+                    print(usr_otp.otp)
+                    #usr = MyCustomModel.objects.get(id = user_id)
+                    email = user.email
+                    print(email)
+                    #json_email = json.dumps(email)
+                    #print(json_email)
+                    #json_otp = json.dumps(my_otp)
+                    #user = user_otp.objects.get(user=user)
+                    # print(user_otp)
+                    #import ipdb;ipdb.set_trace()
+                    send_email.apply_async(args=[email, my_otp])
+                    
+                    messages.success(request, f'Otp Has Sent Successfully To Ur Mail.Check Ur Mail')
+                return render(request, 'otp_check1.html', {'otp':True, 'usr':user})
         else:
             messages.warning(request,f'invalid user_email, pln enter correct email')
             return render(request, 'forget_password.html', {'form':form})
@@ -316,7 +361,7 @@ def verify1(request):
             get_usr = request.POST.get('usr')
             usr = MyCustomModel.objects.get(email=get_usr)
 
-            if int(get_otp) == user_otp.objects.filter(user=usr).last().otp:
+            if int(get_otp) == user_otp.objects.filter(user=usr).first().otp:
                 usr.is_active = True
                 usr.save()
                 messages.success(request, f'your Email is verified')

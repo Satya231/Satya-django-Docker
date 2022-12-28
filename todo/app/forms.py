@@ -37,6 +37,12 @@ class signupForm(UserCreationForm):
         model = MyCustomModel
         fields = ("email",)
 
+# class signupForm(forms.Form):
+#     email = forms.EmailField()
+#     password = forms.CharField(max_length=100, widget = forms.PasswordInput)
+    
+        
+
 ''' This Is For Email Field Where We'll Verify Our Email'''
 class forget_passwordForm(forms.ModelForm):
     email = forms.EmailField(max_length=125)
