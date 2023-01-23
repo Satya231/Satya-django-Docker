@@ -5,6 +5,8 @@ from django.utils import timezone
 
 
 
+
+
 # Create your models here
 # .
 class MyCustomModelManager(BaseUserManager):
@@ -102,12 +104,23 @@ class TODO(models.Model):
     user = models.ForeignKey(MyCustomModel, on_delete=models.CASCADE, null=True, blank=True)
     date = models.DateTimeField(auto_now_add=True)
     priority = models.CharField(max_length=2 , choices=priority_choices)
-    image = models.FileField(upload_to = 'picture', max_length = 255,null=True)
+    image = models.FileField(upload_to = 'picture' ,max_length = 255,null=True)
     text = models.TextField(blank=True, null=True )
      #pip install pillow for images
 
     def __str__(self):
         return self.tasks
+
+    # def save(self, *args, **kwargs):
+    #     try:
+    #         this = TODO.objects.get(id=self.id)
+    #         if this.image:
+    #             this.image.delete()   
+    #     except ObjectDoesNotExist: 
+    #         pass        
+    #     super(TODO, self).save(*args, **kwargs)
+
+    
 
 class user_otp(models.Model):
     user = models.OneToOneField(MyCustomModel, on_delete=models.CASCADE, null=True, blank=True)

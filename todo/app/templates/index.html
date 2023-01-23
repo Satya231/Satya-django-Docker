@@ -1,10 +1,20 @@
 {% extends 'base.html' %}
-{% load cache %}
-{% load static %}
-{% cache 60 content %}
-{% block content %}
-<h2> {{user.email}} welcome to Your Todo App.</h2>
+{% block content1 %}
+<h2> {{user.email}} Manage Your Todo List</h2>
+
+{% endblock %}
+
+
+{% block content2 %}
 <div>
+  <li class="nav-item">
+    <h4> <a class="nav-link" href="/add-todo">AddTodo</a></h4>
+  </li>
+</div>         <!-- dynamic content---->
+{% endblock content2 %}
+{% block content %}
+
+{% comment %} <div>
   <div class="container pt-4">
     <div class="row  p-0 mt-4">
       <div class="col-lg-4 mx-auto shadow p-0">
@@ -22,16 +32,27 @@
             {% endfor %}
             <hr>
             <input type="submit" value="ADD" class="btn btn-info">
-            <a href="{% url 'changepass' %}">Change Password</a>
+            
             <!--a href="/chat/{{user.username}} Chatroom" title="Chating" class="">💌</a-->
           </form>
         </div>
-      </div>
+      </div> {% endcomment %}
 
 
 
       <div class="col">
         <div class="border">
+          <div>
+            <th><button type="button" class="btn btn-danger mt-3">
+              <h4 class="mt-8">Login Times:<span class="badge badge-light"> {{ct}}</span> </h4>
+            </button>
+            </th>
+              <th><button type="button" class="btn btn-dark mt-3">
+                <h4 class="mt-8">Your IP : {{ip}} </h4>
+              </button>
+              </th>
+            
+          </div>
 
           {% if todos|length == 0 %}
 
@@ -59,8 +80,10 @@
                   <th>Delete</th>
                   <th>Update</th>
                   <th>Extracted_text</th>
+                 
 
                 </tr>
+              
               </thead>
 
               <tbody>
@@ -108,4 +131,3 @@
   </div>
 </div>
 {% endblock %}
-{% endcache %}

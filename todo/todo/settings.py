@@ -17,7 +17,7 @@ __all__ = ('celery_app',)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+STATIC_DIR = os.path.join(BASE_DIR,'static')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
@@ -36,14 +36,16 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     
     'app',
+    
     'django_celery_results',
-    'django_celery_beat',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'knox',
     
 ]
 
@@ -65,14 +67,16 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'todo.urls'
 AUTH_USER_MODEL = "app.MyCustomModel"
+#AUTH_USER_MODEL = "app.MyModel"
 #LOGIN_URL = 'mytodo/login/'
-AUTHENTICATION_BACKENDS = ['app.auth_backends.EmailBackend']
+AUTHENTICATION_BACKENDS = ['app.auth_backends.EmailBackend',
+                            ]
 #SESSION_ENGINE =[ "django.contrib.sessions.backends.cache"]
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR,'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -85,8 +89,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'todo.wsgi.application'
-# ASGI_APPLICATION = 'todo.asgi.application'
+#WSGI_APPLICATION = 'todo.wsgi.application'
+ASGI_APPLICATION = 'todo.asgi.application'
 
 
 # Database
@@ -110,13 +114,26 @@ DATABASES = {
 #     }
 # }
 
+
+#File Based Caching:
+
 # CACHES = {
 #     'default': {
 #       'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
 #       'LOCATION': 'C:/Users/vikra/OneDrive/Desktop/Todo3 eith email/todo/app/django_cache',
 #       'TIMEOUT' : 60
-#
+
 #     }
+
+#Database caching:
+CACHES = {
+    'default': {
+      'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+      'LOCATION': 'app_cache',
+     
+
+    }
+}
 
 
 
@@ -144,19 +161,19 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 
-USE_TZ = True
+USE_TZ = False
 
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [
-os.path.join(BASE_DIR,'statics')
+STATIC_DIR,
 ]
 
 # Default primary key field type
@@ -175,7 +192,7 @@ EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_HOST_USER = "satya.prakash1132@gmail.com" 
 DEFAULT_FROM_EMAIL = 'satya.prakash1132@gmail.com'
-EMAIL_HOST_PASSWORD = "amsixzqijfqqyfty"
+EMAIL_HOST_PASSWORD = "rzbswtxfthwtqqwj"
 SERVER_EMAIL = "satya.prakash1132@gmail.com"
 #DEFAULT_FROM_EMAIL = 'Testing <satya.prakash1132@gmail.com>'
 
@@ -201,4 +218,10 @@ CELERY_TIMEZONE = 'Asia/Kolkata'
 CELERY_RESULT_BACKEND = 'django-db'
 
 #celery-beat
-
+# REST_FRAMEWORK = {
+#     'DEFAULT_AUTHENTICATION_CLASSES': [
+#         # 'rest_framework.authentication.BasicAuthentication',
+#         # 'rest_framework.authentication.SessionAuthentication',
+#         'knox.auth.TokenAuthentication',
+#     ]
+# }

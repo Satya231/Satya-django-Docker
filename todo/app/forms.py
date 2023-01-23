@@ -5,6 +5,8 @@ from django.contrib.auth import authenticate,password_validation,get_user_model
 from django.contrib.auth.forms import UserCreationForm,SetPasswordForm
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
+import ipdb
+from django.contrib import messages
 
 
 
@@ -22,6 +24,9 @@ class TODOForm(forms.ModelForm):
                 raise ValidationError("Image Is Required")
 
             return image
+        
+        def clean(self):
+            raise ValidationError("A history error")
 
 ''' Update Form Inheriting Todo Form For Updating All The Fields'''
 class UpdateForm(TODOForm):
@@ -32,7 +37,7 @@ class UpdateForm(TODOForm):
 
 
 class signupForm(UserCreationForm):
-    #email = forms.EmailField()
+    email = forms.EmailField()
     class Meta:
         model = MyCustomModel
         fields = ("email",)
@@ -40,6 +45,9 @@ class signupForm(UserCreationForm):
 # class signupForm(forms.Form):
 #     email = forms.EmailField()
 #     password = forms.CharField(max_length=100, widget = forms.PasswordInput)
+#     # class Meta:
+#     #     model = MyCustomModel
+#     #     fields = ('email','password')
     
         
 
@@ -61,13 +69,19 @@ class Password_rest_form(forms.Form):
 class UserLoginForm(forms.Form):
     email=forms.EmailField(max_length = 100)
     password=forms.CharField(widget = forms.PasswordInput())
-
+    class Meta:  
+        model = MyCustomModel  
+        fields = "__all__"  
+    email=forms.EmailField(max_length = 100)
+    password=forms.CharField(widget = forms.PasswordInput())
+     
     def clean(self,*args,**kwargs):
         email=self.cleaned_data.get('email')
         password=self.cleaned_data.get('password')
 
         if email and password:
-            user=authenticate(username=email,password=password)
+
+            user=authenticate(email=email,password=password)
 
             if not user:
                 raise forms.ValidationError('User Does Not Exist')

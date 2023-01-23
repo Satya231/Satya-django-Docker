@@ -29,7 +29,7 @@ def send_email(usr,otp):
     #user = user_otp.objects.get(id=user_id)
     
     msg = f'Hello  Welcome To My Todo App. Your otp is {otp}'
-   
+    logger.info("sending mail")
 
     send_mail(
         "Welcome to our ToDo App. plz verify your mail",
@@ -37,6 +37,7 @@ def send_email(usr,otp):
         settings.EMAIL_HOST_USER,
         [usr],
         fail_silently =True ,
+        
         )
     logger.info("task ended")
     
@@ -57,7 +58,7 @@ def file_validation(image):
     
     file,ext = os.path.splitext(image)  #python inbuilt function:- To extract an extension of a file name(ext = os.path.splitext(file)) gives tuple-> (file_name,file_ext)
     logger.info("get file name and extension")
-    valid_extensions = ['.png','jpg','webp','gif']
+    valid_extensions = ['.png','.jpg','.webp','.gif']
     if  ext not in valid_extensions:
         raise ValidationError('Unsupported file type. Only Pdf files are allowed.')
     logger.info("task ended")
@@ -72,11 +73,11 @@ def extract_text(image):
     logger.info("task started")
     path_to_tesseract = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
     #rdb.set_trace()
-    print(img_file)
-    img = Image.open(image.img.path, mode='r')
-    # print(img)
+    
+    img_file = Image.open(image, mode='r')
     pytesseract.tesseract_cmd = path_to_tesseract
 
     text = pytesseract.image_to_string(img_file)
-    logger.info("text extracted")
+    logger.info("text ended")
+
     return text 

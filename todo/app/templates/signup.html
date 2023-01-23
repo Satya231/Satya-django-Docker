@@ -1,4 +1,18 @@
+
 {% extends 'base.html' %}
+{% load static %}
+{% block content3 %}
+<li class="nav-item">
+  <b><h4> <a class="nav-link" href="/login">Login</a></h4></b>
+</li>
+{% endblock %}
+{% block content1 %}
+<div>
+  <nav class="navbar navbar-light bg-light">
+<h2> Please Do Register In  Your Todo App.</h2>
+  </nav>
+  </div>
+{% endblock %}
 {% block content %}
 
  <div class="containter pt-4">
@@ -16,16 +30,72 @@
       {{fm.label_tag}}  {{fm}}   {{fm.errors|striptags}} <br> <br>
       {% endfor %}
         <hr>
-        <input class="btn btn-success" type="submit" value="Create Account">
+        <input class="btn btn-success" onclick="my_validation()" type="submit" value="Create Account">
       </form>
     </div>
   </div>
 </div> 
 {% endblock %}
+{% comment %} {% extends 'base.html' %}
+{% block content1 %}
+<h2> Please Do Register In  Your Todo App.</h2>
+{% endblock %}
+{% block content %}
 
 
 
-
-
+ <div class="containter pt-4">
+  <div class="col-lg-5 shadow  mx-auto p-0">
+    <div class="alert alert-success">
+      <h2>Create Account</h2>
+    </div>
+    <div class="p-4">
+      <form method="post" onsubmit="return my_validation()"  action="/signup/" >
+        {% csrf_token %}
+        {% comment %} {% if form.non_field_errors %}
+        <p>{{error}}<p>
+        {% endif %} {% endcomment %}
+      {% comment %} {% for fm in form %}
+      {{fm.label_tag}}  {{fm}}   {{fm.errors|striptags}} <br> <br>
+      {% endfor %} {% endcomment %}
+       {% comment %} email <input type="text" name="email" id="textemail" placeholder="Enter Email" required="" /><br><br>
+       password <input type="password" name="password" id="textpass1" placeholder="Password" required="" /><br><br>
+       password (Again) <input type="password" name="password2" id="textpass2" placeholder="Confirm Ur Password" required="" />
+        <hr>
+        <input class="btn btn-success" type="submit" id="validate"  value="Create Account" />
+      </form>
+    </div>
+  </div>
+</div> 
+<script type="text/javascript">
+  
+  function my_validation(){
+    console.log("running validation")
+        var email = document.getElementById("textemail").value;
+        console.log("email :",email)
+         var pass1 = document.getElementById("textpass1").value;
+        console.log("pass1:",pass1)
+        var pass2 = document.getElementById("textpass2").value;
+        console.log("pass2",pass2) 
+        
+        if (email.indexOf("@")==-1 || email.lastIndexOf(".")==-1){
+              alert("invalid email id");
+              return false;
+        }
+        else if (pass1.length <6){
+          alert("length of password must be of atleast 6 character");
+          return false;
+        }
+        else if(pass1 != pass2){
+          alert("password not matched.Plz reenter ur password");
+          return false;
+        }
+        else{
+          alert("ur registration is successfull")
+        }
+  } 
+</script>
+{% endblock %}
+ {% endcomment %} 
 
 

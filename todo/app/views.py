@@ -19,6 +19,18 @@ from PIL import Image
 from celery import chain
 import os.path
 import ipdb
+from django.core.cache import cache
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.views import APIView
+from .serializers import TodoSerializer,UserSerializer,RegisterSerializer
+from rest_framework.views import APIView
+from django.http.response import JsonResponse
+from rest_framework import generics, permissions
+
+from knox.models import AuthToken
+
 
 
 
@@ -29,16 +41,28 @@ import ipdb
      here we have applied filter the query set for user object of Model TODO to Display All the Field's Value Related to User
       and set ordering is by priority'''
 
+
+
 @login_required(login_url='login')
 def home(request):
-    if request.user.is_authenticated:
-        user = request.user
-        form = TODOForm()
-        todos = TODO.objects.filter(user = user).order_by('priority')
+            if request.user.is_authenticated:
+                user = request.user
+                form = TODOForm()
+                todos = TODO.objects.filter(user = user).order_by('priority')
+                ip = request.session.get('ip', 0)
+                ct = cache.get('count', version= user.pk)
+                # id = pk 
+                # if id is not None:
+                #     stu = TODO.objects.get(pk=id)
+                #     serializer = TodoSerializer(stu)
+                #     return Response(serializer.data)
 
-        return render(request , 'index.html' , context={'form' : form , 'todos' : todos,   })
-    else:
-            return redirect('login')
+                # stu = TODO.objects.all()
+                # serializer = TodoSerializer(stu,many=True)
+                # return Response(serializer.data)
+                return render(request , 'index.html' , context={'form' : form , 'todos' : todos, 'ip':ip, 'ct':ct  })
+            else:
+                return redirect('login')
 
 
 
@@ -47,7 +71,8 @@ def home(request):
      Because without Email Otp Verification Users can't login .and also we are setting a session id for user to validating next page.
      Here we also calling Otp function to generate otp and create a new object for user_otp to store user and otp in backend and 
      also calling Send_email function where we are sending otp to email.
-     After signup form,page will redirected To Otp Verification Page  '''
+        After signup form,page will redirected To Otp Verification Page  '''
+
 def signup(request):
 
     if request.method == 'GET':
@@ -58,12 +83,14 @@ def signup(request):
         return render(request , 'signup.html' , context=context)
     else:
         #print(request.POST)
-        form = signupForm(request.POST)  
+        form = signupForm(request.POST)
         context = {
             "form" : form
         }
         if form.is_valid():
             user = form.save()
+            # email = request.POST.get('email')
+            # password = request.POST.get('password')
             user.is_active=False  #now user is not active thus can,t login bec we have to verify user with OTP
             user.save()
             user_id = user.id
@@ -80,14 +107,26 @@ def signup(request):
                 send_email.apply_async(args=[email, ur_otp])
                 
                 messages.success(request, f'Otp Has Sent Successfully To Ur Mail.Check Ur Mail')
-            return render(request, 'otp_check.html', {'otp':True, 'usr':user})
+            return render(request, 'otp_check.html', {'otp':True, 'usr':user, })
         else:
             return render(request , 'signup.html' , context=context)
+# class SignupView(APIView):
+
+#     serializer_class = UserSerializer
+#     permission_classes = ()
+#     authentication_classes = ()
+#     http_method_names = ['post', 'get']
+
+#     def post(self, request, *args, **kwargs):
+
+#         serializer = self.serializer_class(data=request.data)
+#         if serializer.is_valid():
+
+#             serializer.save()
+#             return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
+#         return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# def send_mail_func(request):
-#     send_email(user_id)
-#     return HttpResponse("sent")
 #==================================================Login Functions=============================================================================================================
 ''' here after getting Post req ,validating Form and save the user.
     Setting a SESSION id for  user for validating in nxt page.
@@ -95,36 +134,65 @@ def signup(request):
 
 def login(request):
     
-    if request.method == 'GET':
+     if request.method == 'GET':
         form1 = UserLoginForm()
         context = {
             "form" : form1
         }
         return render(request , 'login.html' , context=context )
-    else:
+     else:
         form = UserLoginForm(data=request.POST)
-        print(form.is_valid())
-        
+            
+            #print(data)
+        #ipdb.set_trace()
+        #password = request.POST.get('password')
+        #print(form.is_valid())
+        #ipdb.set_trace()
         if form.is_valid():
             eml = form.cleaned_data.get('email')
             password = form.cleaned_data.get('password')
-            data=request.POST.get('username')
+            
+            
             #print(data)
-            user = authenticate(email=eml , password = password)
+            
+            user = authenticate(email=eml , password = password,)
+            
         
-
+        
+            user = MyCustomModel.objects.get(email=eml)
+            
+            
+            
             if user is not None:
-                loginUser(request , user)
-                messages.success(request, f'You Have Logged In Successfully ')
-                #request.session['uid'] = request.POST.get('user.id') 
-                return redirect('home')
+                        loginUser(request , user)
+                        messages.success(request, f'You Have Logged In Successfully ')
+                        #request.session['uid'] = request.POST.get('user.id') 
+                        return redirect('add-todo')
+                   
+            else:
+                        messages.warning(request, f'You Have Entered Wrong Password or Users')
+                        context = {
+                        "form" : form
+                        }
+                        return render(request , 'login.html' , context=context )
+
+
+
         else:
             context = {
                 "form" : form
             }
             return render(request , 'login.html' , context=context )
+# class LoginView(APIView):
 
-
+#     def post(self, request, *args, **kwargs):
+#         email = request.data.get("email")
+#         password = request.data.get("password")
+#         user = authenticate(email=email, password=password)
+#         if user:
+#             return JsonResponse({"res": "logged in successfully"}, status=status.HTTP_200_OK, )
+#         else:
+#             return JsonResponse({"res": "you are not a valid user"}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 ''' Here we have just made an otp function to generate otp by using Random module'''
@@ -177,8 +245,17 @@ def verify(request):
             if int(get_otp) == user_otp.objects.filter(user=usr).first().otp:
                 usr.is_active = True
                 usr.save()
+                # email = request.POST.get('email')
+                # password = request.POST.get('password') 
                 messages.success(request, f'Account is Created For {usr.email}')
-
+                # user = authenticate(email=email,
+                #                     password=password,
+                #                     )
+                # ipdb.set_trace()
+                # ct = cache.get('count', version= usr.pk)
+                # if ct < 2:
+                # loginUser(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                # return HttpResponseRedirect("/home/")
                 return redirect('login')
             else:
                 messages.warning(request, f'You Entered a Wrong OTP')
@@ -189,6 +266,7 @@ def verify(request):
 
 
 #=====================================CRUD OPerations=============================================================================================================
+# @api_view(['POST'])
 @login_required(login_url='login')
 def add_todo(request):
     if request.user.is_authenticated:
@@ -201,12 +279,17 @@ def add_todo(request):
         
         #print(request.POST, request.FILES) 
         if form.is_valid():
-            #image = request.FILES.get('image')
-           
+            image1 = request.FILES.get('image')
+            print("bcde")
+            #print(image1)
             todo = form.save(commit=False)
             todo.user = user
+            todo.image = image1
             todo.save()
             image = todo.image.path
+            #image_path=os.path.join(BASE_DIR,'image')
+            #print(image.img.path)
+            #print(os.path.basename(image).partition("?")[0])
             print("abcd")
             print(image)
 
@@ -218,18 +301,6 @@ def add_todo(request):
 
                 #field_name = 'image'
                 obj = TODO.objects.last()
-                
-                # image_file = getattr(obj, field_name)
-                
-                # obj_1 = TODO.objects.values().last()
-                # image = obj_1['image']
-                
-                # id = obj_1['id']
-                # print(image)
-                # print("abcd")
-                # text = extract(img_file)
-                # payload = {'image':'files'}
-                #file_name = json.dumps('image')
     
                 text = chain(file_validation.s(image),extract_text.s()).apply_async()
                 
@@ -237,11 +308,32 @@ def add_todo(request):
                 obj.text = text.get()
             
                 obj.save()
+                # stu = TODO.objects.all
+                # serializer = TodoSerializer(stu)
+                # if serializer.is_valid():
+                #     serializer.save()
+                    
+                #     return Response(serializer.data, many=True )
+                # else:
+                #     return HttpResponse({"res": "you are not a valid user"}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+            # id = request.data.get("id")
+            # if id is not None:
+            #     stu = TODO.objects.get(id=id)
+            #     serializer = TodoSerializer(stu)
+            #     return Response(serializer.data)
+
+            # stu = TODO.objects.all()
+            # serializer = TodoSerializer(stu,many=True)
+            # return Response(serializer.data)
                           
-            return redirect("home")
+                return redirect("home")
             
         else: 
-            return render(request , 'index.html' , context={'form' : form})
+            return render(request , 'add_todo.html' , context={'form' : form})
+
+
 
 @login_required(login_url='login')
 def update_todo(request, id):
@@ -406,6 +498,16 @@ def password_reset(request):
 #    test_func.delay()
 #    return HttpResponse("Done") 
 
-    
+class RegisterAPI(generics.GenericAPIView):
+    serializer_class = RegisterSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        return Response({
+        "user": UserSerializer(user, context=self.get_serializer_context()).data,
+        "token": AuthToken.objects.create(user)[1]
+        })   
     
         
